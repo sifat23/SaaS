@@ -1,0 +1,157 @@
+services:
+
+  #Laravel application setup code
+  app:
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
+      args:
+        UID: ${UID:-1000}
+        GID: ${GID:-1000}
+    container_name: saas_app
+    restart: unless-stopped
+    working_dir: /var/www/html
+    volumes:
+      - ./:/var/www/html
+      - ./docker/php/local.ini:/usr/local/etc/php/conf.d/local.ini
+    environment:
+      APP_ENV: local
+      PHP_OPCACHE_VALIDATE_TIMESTAMPS: 1
+    depends_on:
+      - db
+      - redis
+    networks:
+      - saas
+
+  #nginx setup code
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: saas_nginx
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    volumes:
+      - ./:/var/www/html
+      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - app
+    networks:
+     - saas
+
+  #node setup code
+  node:
+    image: node:20-alpine
+    container_name: saas_node
+    working_dir: /var/www/html
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./:/var/www/html
+      - node_modules:/var/www/html/node_modules
+    command: sh -c "npm install && npm run dev -- -- host 0.0.0.0"
+    networks:
+      - saas
+
+  #db setup code
+  db:
+    image: postgres:16-alpine
+    container_name: saas_db
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: ${DB_DATABASE:-saas}
+      POSTGRES_USER: ${DB_USENAME:-saas}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-secret}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - saas
+
+  #redis setup code
+  redis:
+    image: redis:7-alpine
+    container_name: saas_radis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-redis_secret}
+    volumes:
+      - redis_data:/data
+    networks:
+      - saas
+    
+  #Laravel queue setup code
+  queue:
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
+      args:
+        UID: ${UID:-1000}
+        GID: ${GID:-1000}
+    container_name: saas_queue
+    restart: unless-stopped
+    working_dir: /var/www/html
+    volumes:
+      - ./:/var/www/html
+    command: php artisan queue:work redis --sleep=3 --tries=3 --timeout=90
+    depends_on:
+      - app
+      - redis
+      - db
+    networks:
+      - saas
+
+  #Larave scheduler setup code
+  scheduler:
+      build:
+        context: .
+        dockerfile: docker/php/Dockerfile
+        args:
+          UID: ${UID:-1000}
+          GID: ${GID:-1000}
+      container_name: saas_scheduler
+      restart: unless-stopped
+      working_dir: /var/www/html
+      volumes:
+        - ./:/var/www/html
+      command: sh -c "while true; do php artisan schedule:run --verbose --no-interaction; sleep 60; done"
+      depends_on:
+        - app
+        - db
+        - redis
+      networks:
+        - saas
+
+  #Mailpit setup code (Loacl mailing system)
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: saas_mailpit
+    restart: unless-stopped
+    ports:
+      - "8025:8025"
+      - "1025:1025"
+    networks:
+      - saas
+
+  #Stripe CLI setup for payment and subscription
+  stripe-cli:
+    image: stripe/stripe-cli:latest
+    container_name: saas_stripe_cli
+    profiles: ["stripe"]
+    command: listen --forward-to http://nginx/stripe/webhook
+    environment:
+      STRIPE_API_KEY: ${STRIPE_SECRET}
+    depends_on:
+      - nginx
+    networks:
+      - saas
+
+networks:
+  saas:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  redis_data:
+  node_modules:
