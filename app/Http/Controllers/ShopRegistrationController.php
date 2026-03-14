@@ -9,6 +9,6 @@ class ShopRegistrationController extends Controller
 {
     public function index(Request $request)
     {
-        return Inertia::render('ShopRegistration');
+        return Inertia::render('Auth/ShopRegistration');
     }
 }
