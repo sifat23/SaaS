@@ -1,11 +1,14 @@
 <?php
 
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\ShopRegistrationController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
 // dd('sss');
+
+Route::get('/shop-registration', [ShopRegistrationController::class, 'index'])->name('shop.registration');
 
 Route::get('/', function () {
     return Inertia::render('Welcome');
