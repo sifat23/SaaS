@@ -11,6 +11,7 @@
         "laravel/framework": "^11.0",
         "laravel/sanctum": "^4.0",
         "laravel/tinker": "^2.9",
+        "moneyphp/money": "^4.8",
         "tightenco/ziggy": "^2.6"
     },
     "require-dev": {

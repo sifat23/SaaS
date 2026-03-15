@@ -4,22 +4,75 @@ import PrimaryButton from "@/Components/PrimaryButton";
 import TextInput from "@/Components/TextInput";
 import GuestLayout from "@/Layouts/GuestLayout";
 import { Head, useForm, Link } from "@inertiajs/react";
+import { useState } from "react";
+import * as z from 'zod';
+
+
+// Define schema for Step 1
+const step1Schema = z.object({
+    shop_name: z.string().min(3, "The shop name is required"),
+    shop_email: z.string()
+        .min(2, "The shop email is required")
+        .refine((value) => {
+            // Basic email validation
+            if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) return false;
+
+            // Ensure only one @ exists
+            if ((value.match(/@/g) || []).length !== 1) return false;
+
+            const [local, domain] = value.split("@");
+
+            // Local part must exist
+            if (!local) return false;
+
+            // Domain must exist
+            if (!domain) return false;
+
+            // Domain must contain a dot and not end with one
+            if (!domain.includes(".") || domain.endsWith(".")) return false;
+
+            return true;
+        }, {
+            message: "The shop email must be a valid email address."
+        }),
+});
+
+
 
 const ShopRegistration = () => {
 
-    const { data, setData, post, processing, errors, reset } = useForm({
+    const { data, setData, setError, post, processing, clearErrors, errors, reset } = useForm({
         name: '',
+        shop_name: "",
         email: '',
+        shop_email: "",
         password: '',
         password_confirmation: '',
     });
 
+    const [step, setStep] = useState(1);
+
     const submit = (e) => {
+        clearErrors();
         e.preventDefault();
 
-        post(route(), {
-            onFinished: () => reset('password', 'password_confurmation')
-        })
+        if (step === 1) {
+            const result = step1Schema.safeParse(data);
+            if (!result.success) {
+                const zodErrors = z.treeifyError(result.error);
+
+                Object.entries(zodErrors.properties).forEach(([key, value]) => {
+                    setError(key, value.errors[0]);
+                });
+            } else {
+                setStep(step + 1);
+            }
+        } else {
+            post(route('shop.registration'), {
+                onFinished: () => reset('password', 'password_confurmation')
+            })
+        }
+
     }
 
     return (
@@ -27,63 +80,98 @@ const ShopRegistration = () => {
             <GuestLayout>
                 <Head title="Shop Registration" />
                 <form onSubmit={submit}>
-                    <div>
-                        <InputLabel htmlFor="name" value="Shop Name" />
-                        <TextInput
-                            id="name"
-                            name="name"
-                            value={data.name}
-                            className="mt-1 block w-full"
-                            autoComplete="name"
-                            isFocused={true}
-                            onChange={(e) => setData('name', e.target.value)}
-                        />
 
-                        <InputError message={errors.name} className="mt-2" />
-                    </div>
+                    {step === 2 && (
+                        <>
+                            <div>
+                                <InputLabel htmlFor="name" value="Owner's Name" />
+                                <TextInput
+                                    id="name"
+                                    name="name"
+                                    value={data.name}
+                                    className="mt-1 block w-full"
+                                    autoComplete="name"
+                                    isFocused={true}
+                                    onChange={(e) => setData('name', e.target.value)}
+                                />
+                                {errors.name && <InputError message={errors.name} className="mt-2" />}
+                            </div>
 
-                    <div className="mt-2">
-                        <InputLabel htmlFor="email" value="Shop Owner Email" />
-                        <TextInput
-                            id="email"
-                            name="email"
-                            value={data.email}
-                            className="mt-1 block w-full"
-                            autoComplete="email"
-                            onChange={(e) => setData('email', e.target.value)}
-                        />
+                            <div className="mt-2">
+                                <InputLabel htmlFor="email" value="Shop Owner Email" />
+                                <TextInput
+                                    id="email"
+                                    name="email"
+                                    value={data.email}
+                                    className="mt-1 block w-full"
+                                    autoComplete="email"
+                                    onChange={(e) => setData('email', e.target.value)}
+                                />
+                                {errors.email && <InputError message={errors.email} className="mt-2" />}
+                            </div>
 
-                        <InputError message={errors.email} className="mt-2" />
-                    </div>
+                            <div className="mt-2">
+                                <InputLabel htmlFor="password" value="Password" />
+                                <TextInput
+                                    id="password"
+                                    type="password"
+                                    name="password"
+                                    value={data.password}
+                                    className="mt-1 block w-full"
+                                    autoComplete="new-password"
+                                    onChange={(e) => setData('password', e.target.value)}
+                                />
+                                {errors.password && <InputError message={errors.password} className="mt-2" />}
+                            </div>
 
-                    <div className="mt-2">
-                        <InputLabel htmlFor="password" value="Shop Login Password" />
-                        <TextInput
-                            id="password"
-                            type="password"
-                            name="password"
-                            value={data.password}
-                            className="mt-1 block w-full"
-                            autoComplete="new-password"
-                            onChange={(e) => setData('password', e.target.value)}
-                        />
+                            <div className="mt-2">
+                                <InputLabel htmlFor="password_confirmation" value="Confirm Password" />
+                                <TextInput
+                                    id="password_confirmation"
+                                    name="password_confirmation"
+                                    type="password"
+                                    value={data.password_confirmation}
+                                    className="mt-1 block w-full"
+                                    autoComplete="new-password"
+                                    onChange={(e) => setData('password_confirmation', e.target.value)}
+                                />
+                                {errors.password_confirmation && <InputError message={errors.password_confirmation} className="mt-2" />}
+                            </div>
+                        </>
+                    )}
 
-                        <InputError message={errors.password} className="mt-2" />
-                    </div>
 
-                    <div className="mt-2">
-                        <InputLabel htmlFor="password_confirmation" value="Confirm Password" />
-                        <TextInput
-                            id="password_confirmation"
-                            name="password_confirmation"
-                            value={data.password_confirmation}
-                            className="mt-1 block w-full"
-                            autoComplete="new-password"
-                            onChange={(e) => setData('password_confirmation', e.target.value)}
-                        />
+                    {step === 1 && (
+                        <>
+                            <div className="mt-2">
+                                <InputLabel htmlFor="shop_name" value="Shop Name" />
+                                <TextInput
+                                    id="shop_name"
+                                    name="shop_name"
+                                    value={data.shop_name}
+                                    className="mt-1 block w-full"
+                                    autoComplete="shop-name"
+                                    onChange={(e) => setData('shop_name', e.target.value)}
+                                />
+                                {errors.shop_name && <InputError message={errors.shop_name} className="mt-2" />}
+                            </div>
 
-                        <InputError message={errors.password_confirmation} className="mt-2" />
-                    </div>
+                            <div className="mt-2">
+                                <InputLabel htmlFor="shop_email" value="Shop Email" />
+                                <TextInput
+                                    id="shop_email"
+                                    name="shop_email"
+                                    value={data.shop_email}
+                                    className="mt-1 block w-full"
+                                    autoComplete="email"
+                                    onChange={(e) => setData('shop_email', e.target.value)}
+                                />
+                                {errors.shop_email && <InputError message={errors.shop_email} className="mt-2" />}
+                            </div>
+
+
+                        </>
+                    )}
 
                     <div className="mt-6 flex items-center justify-end">
                         <Link
@@ -93,9 +181,25 @@ const ShopRegistration = () => {
                             Already registered?
                         </Link>
 
-                        <PrimaryButton className="ms-4" disabled={processing}>
+                        {step > 1 && (
+                            <PrimaryButton className="ms-4" type="button" onClick={() => setStep(step - 1)}>
+                                Back
+                            </PrimaryButton>
+                        )}
+
+                        {step < 2 ? (
+                            <PrimaryButton className="ms-4" type="submit">
+                                Next
+                            </PrimaryButton>
+                        ) : (
+                            <PrimaryButton className="ms-4" type="submit" disabled={processing}>
+                                Register
+                            </PrimaryButton>
+                        )}
+
+                        {/* <PrimaryButton className="ms-4" disabled={processing}>
                             Register
-                        </PrimaryButton>
+                        </PrimaryButton> */}
                     </div>
                 </form>
             </GuestLayout>

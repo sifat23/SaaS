@@ -20,7 +20,7 @@ return new class extends Migration
             $table->foreign('owner_id')->references('id')->on('users')->cascadeOnDelete();
             $table->string('phone', 50)->nullable();
             $table->text('address')->nullable();
-            $table->tinyInteger('statue')->comment("1=active,0=suspended,-1=cancle");
+            $table->tinyInteger('status')->comment("1=active,0=suspended,-1=cancel");
             $table->timestamp("trial_ends_at");
             $table->timestamps();
         });

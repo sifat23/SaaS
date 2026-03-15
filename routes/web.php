@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ShopRegistrationController;
+use App\Http\Controllers\StripeWebhookController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -9,6 +10,9 @@ use Inertia\Inertia;
 // dd('sss');
 
 Route::get('/shop-registration', [ShopRegistrationController::class, 'index'])->name('shop.registration');
+Route::post('/shop-registration', [ShopRegistrationController::class, 'store']);
+
+Route::get('/shop-registration/success', [ShopRegistrationController::class, 'stripeSuccess'])->name('shop.registration.success');
 
 Route::get('/', function () {
     return Inertia::render('Welcome');
@@ -22,6 +26,8 @@ Route::get('/', function () {
 //         'phpVersion' => PHP_VERSION,
 //     ]);
 // });
+
+Route::post('/stripe/webhook', [StripeWebhookController::class, 'handle']);
 
 
 Route::get('/dashboard', function () {
