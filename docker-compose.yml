@@ -1,6 +1,6 @@
 services:
 
-  #Laravel application setup code
+  # Laravel application setup code
   app:
     build:
       context: .
@@ -23,7 +23,7 @@ services:
     networks:
       - saas
 
-  #nginx setup code
+  # Nginx setup code
   nginx:
     image: nginx:1.27-alpine
     container_name: saas_nginx
@@ -38,7 +38,7 @@ services:
     networks:
      - saas
 
-  #node setup code
+  # Node setup code
   node:
     image: node:20-alpine
     container_name: saas_node
@@ -52,41 +52,43 @@ services:
     networks:
       - saas
 
-  #db setup code
+  # DB setup code
   db:
-    image: postgres:16-alpine
+    image: mariadb:11.4
     container_name: saas_db
     restart: unless-stopped
     ports:
-      - "5432:5432"
+      - "3306:3306"
     environment:
-      POSTGRES_DB: ${DB_DATABASE:-saas}
-      POSTGRES_USER: ${DB_USENAME:-saas}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-secret}
+      MYSQL_DATABASE: ${DB_DATABASE:-saas}
+      MYSQL_USER: ${DB_USErNAME:-saas}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-secret}
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-root}
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - mariadb_data:/var/lib/mysql
     networks:
       - saas
 
-  #manage the GUI for database
-  pgadmin:
-    image: dpage/pgadmin4
-    container_name: saas_pgadmin
+  # Manage the GUI for database
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin:latest
+    container_name: saas_phpmyadmin
     restart: unless-stopped
     ports:
       - "5050:80"
     environment:
-      PGADMIN_DEFAULT_EMAIL: admin@example.com
-      PGADMIN_DEFAULT_PASSWORD: admin
+      PMA_HOST: db
+      PMA_USER: root
+      PMA_PASSWORD: ${DB_PASSWORD:-secret}
     depends_on:
       - db
     networks:
       - saas
 
-  #redis setup code
+  # Redis setup code
   redis:
     image: redis:7-alpine
-    container_name: saas_radis
+    container_name: saas_redis
     restart: unless-stopped
     ports:
       - "6379:6379"
@@ -96,7 +98,7 @@ services:
     networks:
       - saas
     
-  #Laravel queue setup code
+  # Laravel queue setup code
   queue:
     build:
       context: .
@@ -117,7 +119,7 @@ services:
     networks:
       - saas
 
-  #Larave scheduler setup code
+  # Laravel scheduler setup code
   scheduler:
       build:
         context: .
@@ -138,7 +140,7 @@ services:
       networks:
         - saas
 
-  #Mailpit setup code (Loacl mailing system)
+  # Mailpit setup code (Local mailing system)
   mailpit:
     image: axllent/mailpit:latest
     container_name: saas_mailpit
@@ -167,6 +169,6 @@ networks:
     driver: bridge
 
 volumes:
-  postgres_data:
+  mariadb_data:
   redis_data:
   node_modules:

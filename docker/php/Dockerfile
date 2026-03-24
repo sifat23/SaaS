@@ -23,10 +23,12 @@ RUN apt-get update && apt-get install -y \
     libxpm-dev \
     libmagickwand-dev \
     supervisor \
+    default-mysql-client \          
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install \
         pdo \
-        pdo_pgsql \
+        pdo_mysql \                 
+        mysqli \                    
         mbstring \
         exif \
         pcntl \
