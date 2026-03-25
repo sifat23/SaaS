@@ -20,6 +20,11 @@ class ShopRepository implements ShopRepositoryInterface
         return $this->model->all();
     }
 
+    public function find(string $key, string $value): ?Shop
+    {
+        return $this->model->where($key, $value)->first();
+    }
+
     public function findById(int $id): ?Shop
     {
         return $this->model->findOrFail($id);

@@ -1,10 +1,10 @@
 <?php
 
-namespace App\Handlers;
+namespace App\Helpers;
 
 use Illuminate\Support\Str;
 
-class SlugHandler
+class SlugHelper
 {
     public static final function generate(
         mixed $model,

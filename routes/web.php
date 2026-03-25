@@ -1,9 +1,10 @@
 <?php
 
+use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ShopRegistrationController;
 use App\Http\Controllers\StripeWebhookController;
-use Illuminate\Foundation\Application;
+use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -11,8 +12,9 @@ use Inertia\Inertia;
 
 Route::get('/shop-registration', [ShopRegistrationController::class, 'index'])->name('shop.registration');
 Route::post('/shop-registration', [ShopRegistrationController::class, 'store']);
-
-Route::get('/shop-registration/success', [ShopRegistrationController::class, 'stripeSuccess'])->name('shop.registration.success');
+Route::get('/shop-registration/payment/success', [ShopRegistrationController::class, 'success'])
+    ->name('shop.registration.payment.success');
+Route::get('shop-registration/payment/status',  [PaymentController::class, 'checkStatus'])->name('setup.payment.check');
 
 Route::get('/', function () {
     return Inertia::render('Welcome');
@@ -27,7 +29,8 @@ Route::get('/', function () {
 //     ]);
 // });
 
-Route::post('/stripe/webhook', [StripeWebhookController::class, 'handle']);
+Route::post('/stripe/webhook', [StripeWebhookController::class, 'handleWebhook'])
+    ->withoutMiddleware([VerifyCsrfToken::class]);
 
 
 Route::get('/dashboard', function () {
@@ -40,4 +43,4 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
-require __DIR__.'/auth.php';
+require __DIR__ . '/auth.php';

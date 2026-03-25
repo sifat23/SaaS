@@ -20,6 +20,11 @@ class ShopRegistrationRepository implements ShopRegistrationRepositoryInterface
         return $this->model->all();
     }
 
+    public function find(string $key, string $value): ?ShopRegistration
+    {
+        return $this->model->where($key, $value)->first();
+    }
+
     public function findById(int $id): ?ShopRegistration
     {
         return $this->model->findOrFail($id);

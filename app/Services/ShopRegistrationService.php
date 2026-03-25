@@ -47,4 +47,6 @@ class ShopRegistrationService
             'status' => $status
         ]);
     }
+
+    
 }

@@ -9,11 +9,13 @@ interface ShopRegistrationRepositoryInterface
 {
     public function all(): Collection;
 
-     public function findById(int $id): ?ShopRegistration;
+    public function find(string $key, string $value): ?ShopRegistration;
 
-     public function create(array $data): ShopRegistration;
+    public function findById(int $id): ?ShopRegistration;
 
-     public function update(ShopRegistration $shopRegistration, array $data): bool;
+    public function create(array $data): ShopRegistration;
 
-     public function delete(int $id): bool;
+    public function update(ShopRegistration $shopRegistration, array $data): bool;
+
+    public function delete(int $id): bool;
 }

@@ -9,6 +9,8 @@ interface UserRepositoryInterface
 {
      public function all(): Collection;
 
+     public function find(string $key, string $value): ?User;
+
      public function findById(int $id): ?User;
 
      public function create(array $data): User;

@@ -31,4 +31,11 @@ return [
         ],
     ],
 
+    'stripe' => [
+        'secret' => '',
+        'key' => '',
+        'setup_fee' => env('SETUP_FEE'),
+        'monthly_fee' => env('MONTHLY_FEE'),
+    ],
+
 ];
