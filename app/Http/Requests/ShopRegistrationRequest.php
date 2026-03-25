@@ -4,6 +4,7 @@ namespace App\Http\Requests;
 
 use App\Rules\ValidEmail;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Support\Facades\Hash;
 
 class ShopRegistrationRequest extends FormRequest
 {
@@ -23,19 +24,13 @@ class ShopRegistrationRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => 'required|min:3|max:200',
+            'owner_name' => 'required|min:3|max:200',
             'shop_name' => 'required|min:3|max:200',
-            'email' => [
+            'owner_email' => [
                 'required',
                 new ValidEmail,
                 'max:200',
                 'unique:users,email'
-            ],
-            'shop_email' => [
-                'required',
-                new ValidEmail,
-                'max:200',
-                'unique:shops,email'
             ],
             'password' => 'required|min:6|max:200',
             'password_confirmation' => 'required|min:6|max:200|same:password'
@@ -49,5 +44,12 @@ class ShopRegistrationRequest extends FormRequest
             'email.required' => "The owner's email is required",
             'shop_email.required' => "The shop email is required",
         ];
+    }
+
+    public function passedValidation()
+    {
+        $this->merge([
+            'password' => Hash::make($this->password)
+        ]);
     }
 }

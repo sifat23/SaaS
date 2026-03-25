@@ -13,6 +13,7 @@ use App\Models\ShopRegistration;
 use App\Repositories\Interfaces\ShopRegistrationRepositoryInterface;
 use App\Repositories\Interfaces\ShopRepositoryInterface;
 use App\Repositories\Interfaces\UserRepositoryInterface;
+use App\Services\ShopRegistrationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
@@ -20,19 +21,15 @@ use Illuminate\Support\Facades\Config;
 
 class ShopRegistrationController extends Controller
 {
-    protected $shopRegistrationRepo;
+    protected $shopRegistrationService;
     protected $userRepo;
     protected $shopRepo;
 
     // Inject the UserRepositoryInterface here too!
     public function __construct(
-        ShopRegistrationRepositoryInterface $shopRegistrationRepo,
-        UserRepositoryInterface $userRepo,
-        ShopRepositoryInterface $shopRepo,
+        ShopRegistrationService $shopRegistrationService
     ) {
-        $this->shopRegistrationRepo = $shopRegistrationRepo;
-        $this->userRepo = $userRepo;
-        $this->shopRepo = $shopRepo;
+        $this->shopRegistrationService = $shopRegistrationService;
     }
 
 
@@ -43,29 +40,24 @@ class ShopRegistrationController extends Controller
 
     public function store(ShopRegistrationRequest $request)
     {
-        $chunk = [
-            'shop_name' => $request->shop_name,
-            'password' => bcrypt($request->password),
-            'owners_name' => $request->name,
-            'owners_email' => $request->email
-        ];
-
-        $newRegistration = $this->shopRegistrationRepo->create([
-            'email' => $request->shop_email,
-            'shop_name' => $request->shop_name
-        ]);
-
+        $newRegistration = $this->shopRegistrationService->temporaryRegistration($request);
+        
         $setupFee = Config::get('app.shop_setup_fee');
 
         $handleStripe = new StripeHandlers();
         $handleStripe->setApiKey();
         $session = $handleStripe->getSetupSession($setupFee, $request->email);
 
-        $newRegistration->update([
-            'stripe_session_id' => $session->id
-        ]);
 
-        RedisHandlers::setAData($session->id, $chunk);
+        $update = $this->shopRegistrationService
+            ->updateColumn($newRegistration, 'stripe_session_id', $session->id);
+
+
+        // $updateReg$newRegistration->update([
+        //     'stripe_session_id' => $session->id
+        // ]);
+
+        // RedisHandlers::setAData($session->id, $chunk);
 
         return Inertia::location($session->url);
     }

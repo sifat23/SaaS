@@ -11,30 +11,30 @@ import * as z from 'zod';
 // Define schema for Step 1
 const step1Schema = z.object({
     shop_name: z.string().min(3, "The shop name is required"),
-    shop_email: z.string()
-        .min(2, "The shop email is required")
-        .refine((value) => {
-            // Basic email validation
-            if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) return false;
+    // shop_email: z.string()
+    //     .min(2, "The shop email is required")
+    //     .refine((value) => {
+    //         // Basic email validation
+    //         if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) return false;
 
-            // Ensure only one @ exists
-            if ((value.match(/@/g) || []).length !== 1) return false;
+    //         // Ensure only one @ exists
+    //         if ((value.match(/@/g) || []).length !== 1) return false;
 
-            const [local, domain] = value.split("@");
+    //         const [local, domain] = value.split("@");
 
-            // Local part must exist
-            if (!local) return false;
+    //         // Local part must exist
+    //         if (!local) return false;
 
-            // Domain must exist
-            if (!domain) return false;
+    //         // Domain must exist
+    //         if (!domain) return false;
 
-            // Domain must contain a dot and not end with one
-            if (!domain.includes(".") || domain.endsWith(".")) return false;
+    //         // Domain must contain a dot and not end with one
+    //         if (!domain.includes(".") || domain.endsWith(".")) return false;
 
-            return true;
-        }, {
-            message: "The shop email must be a valid email address."
-        }),
+    //         return true;
+    //     }, {
+    //         message: "The shop email must be a valid email address."
+    //     }),
 });
 
 
@@ -42,10 +42,9 @@ const step1Schema = z.object({
 const ShopRegistration = () => {
 
     const { data, setData, setError, post, processing, clearErrors, errors, reset } = useForm({
-        name: '',
-        shop_name: "",
-        email: '',
-        shop_email: "",
+        owner_name: '',
+        shop_name: '',
+        owner_email: '',
         password: '',
         password_confirmation: '',
     });
@@ -53,12 +52,19 @@ const ShopRegistration = () => {
     const [step, setStep] = useState(1);
 
     const submit = (e) => {
+        console.log('sss');
+
         clearErrors();
         e.preventDefault();
+
+        console.log('step: ', step);
+
 
         if (step === 1) {
             const result = step1Schema.safeParse(data);
             if (!result.success) {
+                console.log('sss', result);
+
                 const zodErrors = z.treeifyError(result.error);
 
                 Object.entries(zodErrors.properties).forEach(([key, value]) => {
@@ -68,8 +74,13 @@ const ShopRegistration = () => {
                 setStep(step + 1);
             }
         } else {
+            // post(route('shop.registration'), {
+            //     onFinished: () => reset('password', 'password_confirmation')
+            // })
+
+            console.log('processing');
             post(route('shop.registration'), {
-                onFinished: () => reset('password', 'password_confurmation')
+                onFinished: () => reset('password', 'password_confirmation')
             })
         }
 
@@ -84,30 +95,30 @@ const ShopRegistration = () => {
                     {step === 2 && (
                         <>
                             <div>
-                                <InputLabel htmlFor="name" value="Owner's Name" />
+                                <InputLabel htmlFor="owner_name" value="Owner's Name" />
                                 <TextInput
-                                    id="name"
-                                    name="name"
-                                    value={data.name}
+                                    id="owner_name"
+                                    name="owner_name"
+                                    value={data.owner_name}
                                     className="mt-1 block w-full"
                                     autoComplete="name"
                                     isFocused={true}
-                                    onChange={(e) => setData('name', e.target.value)}
+                                    onChange={(e) => setData('owner_name', e.target.value)}
                                 />
-                                {errors.name && <InputError message={errors.name} className="mt-2" />}
+                                {errors.owner_name && <InputError message={errors.owner_name} className="mt-2" />}
                             </div>
 
                             <div className="mt-2">
-                                <InputLabel htmlFor="email" value="Shop Owner Email" />
+                                <InputLabel htmlFor="owner_email" value="Shop Owner Email" />
                                 <TextInput
-                                    id="email"
-                                    name="email"
-                                    value={data.email}
+                                    id="owner_email"
+                                    name="owner_email"
+                                    value={data.owner_email}
                                     className="mt-1 block w-full"
                                     autoComplete="email"
-                                    onChange={(e) => setData('email', e.target.value)}
+                                    onChange={(e) => setData('owner_email', e.target.value)}
                                 />
-                                {errors.email && <InputError message={errors.email} className="mt-2" />}
+                                {errors.owner_email && <InputError message={errors.owner_email} className="mt-2" />}
                             </div>
 
                             <div className="mt-2">
@@ -156,7 +167,7 @@ const ShopRegistration = () => {
                                 {errors.shop_name && <InputError message={errors.shop_name} className="mt-2" />}
                             </div>
 
-                            <div className="mt-2">
+                            {/* <div className="mt-2">
                                 <InputLabel htmlFor="shop_email" value="Shop Email" />
                                 <TextInput
                                     id="shop_email"
@@ -167,9 +178,7 @@ const ShopRegistration = () => {
                                     onChange={(e) => setData('shop_email', e.target.value)}
                                 />
                                 {errors.shop_email && <InputError message={errors.shop_email} className="mt-2" />}
-                            </div>
-
-
+                            </div> */}
                         </>
                     )}
 
