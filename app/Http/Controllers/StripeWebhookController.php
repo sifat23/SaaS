@@ -16,6 +16,9 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Laravel\Cashier\Cashier;
+use Stripe\Exception\SignatureVerificationException;
+use Stripe\Webhook;
+use UnexpectedValueException;
 
 class StripeWebhookController extends Controller
 {
@@ -40,40 +43,65 @@ class StripeWebhookController extends Controller
     public function handleWebhook(Request $request)
     {
         $payload = $request->getContent();
+        $signature = $request->header('Stripe-Signature');
+        $webhookSecret = config('services.stripe.webhook_secret');
 
-        $event = \Stripe\Event::constructFrom(
-            json_decode($payload, true)
-        );
+        try {
+            $event = Webhook::constructEvent($payload, $signature, $webhookSecret);
+        } catch (UnexpectedValueException $e) {
+            Log::error('Stripe webhook invalid payload', [
+                'message' => $e->getMessage(),
+            ]);
 
-        $session = $event->data->object;
+            return response()->json(['message' => 'Invalid payload'], 400);
+        } catch (SignatureVerificationException $e) {
+            Log::error('Stripe webhook invalid signature', [
+                'message' => $e->getMessage(),
+            ]);
 
-        if ($event->type === 'checkout.session.completed') {
-            DB::beginTransaction();
-            try {
-                $registrationID = $session->metadata->registration_id;
-                $shopRegistration = $this->shopRegistrationRepo->findById($registrationID);
-
-                $user = $this->userService->createUser($shopRegistration);
-                $shop = $this->shopService->createShop($user, $registrationID);
-                $this->userService->updateColumn($user, 'shop_id', $shop->id);
-
-                SubscriptionService::createFreeSubscription($user);
-                SubscriptionService::update($user, $shop);
-
-                $this->shopRegistrationRepo->update($shopRegistration, [
-                    'status' => ShopRegistrationStatus::PAID
-                ]);
-
-                DB::commit();
-
-                Mail::to($user->email)->queue(new ShopCreatedMail($user, $shop));
-            } catch (\Exception $e) {
-                DB::rollBack();
-                Log::info('checkout session complete error', [
-                    'e' => $e
-                ]);
-            }
+            return response()->json(['message' => 'Invalid signature'], 400);
         }
+
+        $eventType = $event->type;
+
+        switch ($eventType) {
+            case 'customer.subscription.created':
+                $this->handleSubscriptionCreated($event->data->object);
+                break;
+
+            // case 'customer.subscription.updated':
+            //     $this->handleSubscriptionUpdated($event->data->object);
+            //     break;
+
+            // case 'customer.subscription.deleted':
+            //     $this->handleSubscriptionDeleted($event->data->object);
+            //     break;
+
+            // case 'invoice.payment_succeeded':
+            //     $this->handleInvoicePaymentSucceeded($event->data->object);
+            //     break;
+
+            // case 'invoice.payment_failed':
+            //     $this->handleInvoicePaymentFailed($event->data->object);
+            //     break;
+
+            case 'checkout.session.completed':
+                $this->handleCheckoutSessionCompleted($event->data->object);
+                break;
+
+            default:
+                Log::info('Unhandled Stripe event', ['type' => $eventType]);
+                break;
+        }
+
+
+
+        // $event = \Stripe\Event::constructFrom(
+        //     json_decode($payload, true)
+        // );
+
+        // $session = $event->data->object;
+
 
         if ($event->type === 'invoice.payment_succeeded') {
             $invoice = $event->data->object;
@@ -89,5 +117,49 @@ class StripeWebhookController extends Controller
                 ]);
             }
         }
+    }
+
+    public function handleCheckoutSessionCompleted($session)
+    {
+
+        Log::info('Checkout session completed', [
+            'session_id' => $session->id,
+            'customer_id' => $session->customer,
+            'subscription_id' => $session->subscription ?? null,
+            'mode' => $session->mode,
+        ]);
+
+
+        DB::beginTransaction();
+        try {
+            $registrationID = $session->metadata->registration_id;
+            $shopRegistration = $this->shopRegistrationRepo->findById($registrationID);
+
+            $user = $this->userService->createUser($shopRegistration);
+            $shop = $this->shopService->createShop($user, $registrationID);
+            $this->userService->updateColumn($user, 'shop_id', $shop->id);
+
+            SubscriptionService::createFreeSubscription($user);
+            SubscriptionService::update($user, $shop);
+
+            $this->shopRegistrationRepo->update($shopRegistration, [
+                'status' => ShopRegistrationStatus::PAID
+            ]);
+
+            DB::commit();
+
+            Mail::to($user->email)->queue(new ShopCreatedMail($user, $shop));
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::info('checkout session complete error', [
+                'e' => $e
+            ]);
+        }
+    }
+
+    public function handleSubscriptionCreated($stripeSubscription) {
+        Log::info('handling subscription and other info', [
+            'info' => $stripeSubscription,
+        ]);
     }
 }

@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Enums\ShopStatus;
-use App\Models\User;
 use App\Repositories\Interfaces\ShopRegistrationRepositoryInterface;
 use App\Repositories\Interfaces\ShopRepositoryInterface;
 use App\Repositories\Interfaces\UserRepositoryInterface;
@@ -72,6 +71,15 @@ class PaymentController extends Controller
             'session_id'   => $sessionId,
             'completed' => $completed,
             'message' => 'Shop registration complete'
+        ]);
+    }
+
+    public function canceled(Request $request)
+    {
+        $sessionId = $request->query('session_id');
+
+        return Inertia::render('Auth/ShopRegistrationCancel', [
+            'session_id' => $sessionId,
         ]);
     }
 }

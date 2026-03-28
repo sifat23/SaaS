@@ -50,21 +50,16 @@ const ShopRegistration = () => {
     });
 
     const [step, setStep] = useState(1);
+    const [isProcession, setIsProcession] = useState(true);
 
     const submit = (e) => {
-        console.log('sss');
-
+        setIsProcession(!isProcession);
         clearErrors();
         e.preventDefault();
-
-        console.log('step: ', step);
-
 
         if (step === 1) {
             const result = step1Schema.safeParse(data);
             if (!result.success) {
-                console.log('sss', result);
-
                 const zodErrors = z.treeifyError(result.error);
 
                 Object.entries(zodErrors.properties).forEach(([key, value]) => {
@@ -201,7 +196,7 @@ const ShopRegistration = () => {
                                 Next
                             </PrimaryButton>
                         ) : (
-                            <PrimaryButton className="ms-4" type="submit" disabled={processing}>
+                            <PrimaryButton className="ms-4" type="submit" disabled={isProcession}>
                                 Register
                             </PrimaryButton>
                         )}

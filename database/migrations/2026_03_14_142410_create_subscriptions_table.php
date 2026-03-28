@@ -22,6 +22,7 @@ return new class extends Migration
             $table->integer('quantity')->nullable();
             $table->timestamp('start_date')->nullable();
             $table->timestamp('trial_ends_at')->nullable();
+            $table->timestamp('next_billing_date')->nullable();
             $table->timestamp('ends_at')->nullable();
             // $table->tinyInteger('status')->comment('active=1, canceled=-1, past_due=0')->default(1);
             $table->timestamps();

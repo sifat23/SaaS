@@ -36,6 +36,7 @@ return [
         'key' => '',
         'setup_fee' => env('SETUP_FEE'),
         'monthly_fee' => env('MONTHLY_FEE'),
+        'webhook_secret' => env('STRIPE_WEBHOOK_SECRET'),
     ],
 
 ];

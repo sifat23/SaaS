@@ -33,14 +33,7 @@ class StripeHelper
             ]],
             
             'success_url' => route('shop.registration.payment.success') . '?session_id={CHECKOUT_SESSION_ID}',
-            'cancel_url' => url('/registration-cancel'),
-
-            // 'invoice_creation' => [
-            //     'enable' => true,
-            //     'invoice_data' => [
-            //         'description' => 'Payment for shop registration - ' . $registration->shop_name,
-            //     ]
-            // ]
+            'cancel_url' => route('setup.payment.canceled') . '?session_id={CHECKOUT_SESSION_ID}' ,
         ]);
     }
 }
