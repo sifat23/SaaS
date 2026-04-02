@@ -4,27 +4,28 @@ namespace App\Http\Controllers\Stripe;
 
 use App\Enums\ShopRegistrationStatus;
 use App\Mail\ShopCreatedMail;
-use App\Repositories\Interfaces\ShopRegistrationRepositoryInterface;
 use App\Services\ShopRegistrationService;
 use App\Services\ShopService;
 use App\Services\SubscriptionService;
 use App\Services\UserService;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Str;
+use Laravel\Cashier\Events\WebhookHandled;
+use Laravel\Cashier\Events\WebhookReceived;
 use Laravel\Cashier\Http\Controllers\WebhookController as CashierWebhookController;
 
 
 class WebhookController extends CashierWebhookController
 {
-    protected ShopRegistrationRepositoryInterface $shopRegistrationRepo;
     protected ShopRegistrationService $shopRegistrationService;
     protected UserService $userService;
     protected ShopService $shopService;
     protected SubscriptionService $subscriptionService;
 
     public function __construct(
-        ShopRegistrationRepositoryInterface $shopRegistrationRepo,
         ShopRegistrationService $shopRegistrationService,
         UserService $userService,
         ShopService $shopService,
@@ -32,7 +33,6 @@ class WebhookController extends CashierWebhookController
     ) {
         $this->userService = $userService;
         $this->shopService = $shopService;
-        $this->shopRegistrationRepo = $shopRegistrationRepo;
         $this->shopRegistrationService = $shopRegistrationService;
         $this->subscriptionService = $subscriptionService;
     }
@@ -68,16 +68,16 @@ class WebhookController extends CashierWebhookController
         DB::beginTransaction();
         try {
             $registrationID = $event['data']['object']['metadata']['registration_id'];
-            $shopRegistration = $this->shopRegistrationRepo->findById($registrationID);
+            $shopRegistration = $this->shopRegistrationService->findShopRegistrationWithID($registrationID);
 
             $user = $this->userService->createUser($shopRegistration);
             $shop = $this->shopService->createShop($user, $registrationID);
             $this->userService->updateColumn($user, 'shop_id', $shop->id);
 
             $this->subscriptionService->createFreeSubscription($user);
-//             SubscriptionService::update($user, $shop);
+            //             SubscriptionService::update($user, $shop);
 
-            $this->shopRegistrationRepo->update($shopRegistration, [
+            $this->shopRegistrationService->updateShopRegistration($shopRegistration, [
                 'status' => ShopRegistrationStatus::PAID
             ]);
 
@@ -94,14 +94,61 @@ class WebhookController extends CashierWebhookController
 
     public function handleCustomerSubscriptionCreated($payload)
     {
-        Log::info('handle customer subscription created', [
-            'event' => $payload,
-            'data' => $payload['data']['object'],
-        ]);
-
-
-
         $stripeSubscription = $payload['data']['object'];
         $this->subscriptionService->completeSubscription($stripeSubscription);
+    }
+
+    public function handleTestHelpersTestClockAdvancing($payload)
+    {
+        //  $subscription = $payload['data']['object'];
+
+        // Log::info('Webhook: customer: ', [
+        //     'this is where i wrote customer' => $subscription
+        // ]);
+        // return;
+    }
+
+    public function handleCustomerSubscriptionUpdated($payload)
+    {
+        $subscriptionData = $payload['data']['object'];
+
+        // find user with customer id from payload
+        $user = $this->userService->findUserByStripeID($subscriptionData['customer']);
+
+
+        // Checking the subscription status
+        if ($subscriptionData['status'] === 'active') {
+            if (isset($subscription['latest_invoice'])) {
+                // You can optionally retrieve the invoice to double-check payment
+                $invoice = \Stripe\Invoice::retrieve($subscription['latest_invoice']);
+                if ($invoice->status === 'paid') {
+                    // process the subscription with the user;
+                    $result = $this->subscriptionService->processSubscriptionUpdate($subscriptionData, $user);
+
+                    // $this->info("✅ Payment confirmed & Subscription renewed for user {$user->id}");
+
+                    // $this->userService->updateUserData($user, [
+                    //     'stripe_status'          => $subscription['status'],
+                    //     'subscription_ends_at'   => $itemNextBilling
+                    // ]);
+
+                    $subscriptions = $this->userService->getDefaultSubscription($user);
+
+                    $this->subscriptionService->processSubscriptionUpdate($subscriptionData, $subscriptions);
+                }
+            }
+        }
+
+        // // Handle cancellation or other status changes
+        // if (in_array($subscription['status'], ['canceled', 'incomplete_expired', 'unpaid'])) {
+        //     $this->info("Subscription ended for user {$user->id}");
+        //     // Revoke access, etc.
+        // }
+
+
+
+        // Log::info('handle customer subscription updated', [
+        //     'event' => $payload,
+        // ]);
     }
 }

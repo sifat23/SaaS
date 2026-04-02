@@ -20,8 +20,6 @@ use Illuminate\Support\Facades\Config;
 class ShopRegistrationController extends Controller
 {
     protected $shopRegistrationService;
-    protected $userRepo;
-    protected $shopRepo;
 
     // Inject the UserRepositoryInterface here too!
     public function __construct(
@@ -42,8 +40,10 @@ class ShopRegistrationController extends Controller
         try {
             $newRegistration = $this->shopRegistrationService->temporaryRegistration($request);
             $session = StripeHelper::getSetupSession($newRegistration);
-            $update = $this->shopRegistrationService
-                ->updateColumn($newRegistration, 'stripe_session_id', $session->id);
+
+            $this->shopRegistrationService->updateShopRegistration($newRegistration, [
+                    'stripe_session_id' => $session->id
+                ]);
 
             DB::commit();
         } catch (\Exception $e) {
@@ -68,7 +68,7 @@ class ShopRegistrationController extends Controller
         //     return Inertia::location(route('shop.registration'));
         // }
 
-        
+
 
         // $shopRegistration = ShopRegistration::query()->where('stripe_session_id', $sessionID)->first();
 
@@ -103,8 +103,5 @@ class ShopRegistrationController extends Controller
         // return Inertia::location(route('login'));
     }
 
-    public function completeShopRegistration($registrationID)
-    {
-
-    }
+    public function completeShopRegistration($registrationID) {}
 }

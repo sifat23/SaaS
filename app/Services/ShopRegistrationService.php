@@ -24,21 +24,19 @@ class ShopRegistrationService
         $this->shopRepo = $shopRepo;
     }
 
-    public function temporaryRegistration(ShopRegistrationRequest $request)
+    public function findShopRegistrationWithID(string $id)
     {
-        return $this->shopRegistrationRepo->create([
-            'owner_email' => $request->owner_email,
-            'owner_name' => $request->owner_name,
-            'shop_name' => $request->shop_name,
-            'password' => $request->password,
-        ]);
+        return $this->shopRegistrationRepo->findById($id);
     }
 
-    public function updateColumn (ShopRegistration $shop, $key, $value)
+    public function temporaryRegistration(ShopRegistrationRequest $request)
     {
-        return $this->shopRegistrationRepo->update($shop, [
-            $key => $value
-        ]);
+        return $this->shopRegistrationRepo->create($request->validated());
+    }
+
+    public function updateShopRegistration (ShopRegistration $shop, $data)
+    {
+        return $this->shopRegistrationRepo->update($shop, $data);
     }
 
     public function updateStatus (ShopRegistration $shop, $status)

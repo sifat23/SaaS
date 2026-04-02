@@ -16,6 +16,11 @@ class UserService
         $this->userRepo = $userRepo;
     }
 
+    public function findUserByStripeID(string $stripeID)
+    {
+        return $this->userRepo->findByKeyAndLock('stripe_id', $stripeID);
+    }
+
     public function createUser($registration)
     {
         return $this->userRepo->create([
@@ -26,6 +31,11 @@ class UserService
         ]);
     }
 
+    public function updateUserData(User $user, array $data)
+    {
+        return $this->userRepo->update($user, $data);
+    }
+
     public function updateColumn(User $user, string $columnName, string $value)
     {
         $this->userRepo->update($user, [
@@ -33,5 +43,10 @@ class UserService
         ]);
 
         return $user;
+    }
+
+    public function getDefaultSubscription($user)
+    {
+        return $user->resubscription('default');
     }
 }

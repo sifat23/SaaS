@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Handlers;
+namespace App\Helpers;
 
 use Illuminate\Support\Facades\Redis;
 

@@ -2,10 +2,12 @@
 
 namespace App\Console\Commands;
 
+use App\Services\SubscriptionService;
 use Illuminate\Console\Command;
 
 class GenerateMonthlyInvoices extends Command
 {
+    protected $subscriptionService;
     /**
      * The name and signature of the console command.
      *
@@ -24,12 +26,28 @@ class GenerateMonthlyInvoices extends Command
      * Execute the console command.
      */
 
+    public function __construct(
+        SubscriptionService $subscriptionService
+    ) {
+        parent::__construct(); 
+        $this->subscriptionService = $subscriptionService;
+    }
 
     public function handle()
     {
         $this->info('Starting monthly billing...');
 
-        // $subscriptions = $this->subscriptionRepo->getActiveSubscriptions();
+        // $subscriptions = $this->subscriptionService->getActiveSubscriptions();
+        // if ($subscriptions->isEmpty()) {
+        //     $this->info('✅ No subscriptions due for billing today.');
+        //     return;
+        // }
+
+        // $this->info("Found {$subscriptions->count()} subscription(s) to bill.");
+
+        // $result = $this->subscriptionService->processSubscription($subscriptions);
+        
+
         // $billableNow = $subscriptions->filter(function ($sub) {
 
         //     if (!$sub->valid()) {

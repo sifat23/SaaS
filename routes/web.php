@@ -38,6 +38,11 @@ Route::get('/dashboard', function () {
     return Inertia::render('Dashboard');
 })->middleware(['auth', 'verified'])->name('dashboard');
 
+Route::get('/test-stripe-clock', function (\App\Helpers\StripeHelper $service) {
+    $result = $service->createTestSubscriptionWithClock();
+    return response()->json($result);
+});
+
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');

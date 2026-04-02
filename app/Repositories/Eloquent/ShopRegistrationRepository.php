@@ -6,13 +6,11 @@ use App\Models\ShopRegistration;
 use App\Repositories\Interfaces\ShopRegistrationRepositoryInterface;
 use Illuminate\Database\Eloquent\Collection;
 
-class ShopRegistrationRepository implements ShopRegistrationRepositoryInterface
+class ShopRegistrationRepository extends BaseRepository implements ShopRegistrationRepositoryInterface
 {
-    protected $model;
-
-    public function __construct(ShopRegistration $shopRegistration)
+    public function __construct(ShopRegistration $model)
     {
-        $this->model = $shopRegistration;
+        parent::__construct($model);
     }
 
     public function all(): Collection

@@ -4,46 +4,13 @@ namespace App\Repositories\Eloquent;
 
 use App\Models\Shop;
 use App\Repositories\Interfaces\ShopRepositoryInterface;
-use Illuminate\Database\Eloquent\Collection;
+// use Illuminate\Database\Eloquent\Collection;
+// use Illuminate\Database\Eloquent\Model;
 
-class ShopRepository implements ShopRepositoryInterface
+class ShopRepository extends BaseRepository implements ShopRepositoryInterface
 {
-    protected $model;
-
-    public function __construct(Shop $shop)
+    public function __construct(Shop $model)
     {
-        $this->model = $shop;
-    }
-
-    public function all(): Collection
-    {
-        return $this->model->all();
-    }
-
-    public function find(string $key, string $value): ?Shop
-    {
-        return $this->model->where($key, $value)->first();
-    }
-
-    public function findById(int $id): ?Shop
-    {
-        return $this->model->findOrFail($id);
-    }
-
-    public function create(array $data): Shop
-    {
-        return $this->model->create($data);
-    }
-
-    public function update(int $id, array $data): bool
-    {
-        $shop = $this->findById($id);
-        return $shop->update($data);
-    }
-
-    public function delete(int $id): bool
-    {
-        $shop = $this->findById($id);
-        return $shop->delete();
+        parent::__construct($model);
     }
 }

@@ -2,20 +2,7 @@
 
 namespace App\Repositories\Interfaces;
 
-use App\Models\User;
-use Illuminate\Database\Eloquent\Collection;
-
-interface UserRepositoryInterface
+interface UserRepositoryInterface extends BaseRepositoryInterface
 {
-     public function all(): Collection;
-
-     public function find(string $key, string $value): ?User;
-
-     public function findById(int $id): ?User;
-
-     public function create(array $data): User;
-
-     public function update(User $user, array $data): bool;
-
-     public function delete(int $id): bool;
+    public function getDefaultSubscription($user): mixed;
 }
