@@ -10,50 +10,56 @@ use Stripe\StripeClient;
 
 class StripeHelper
 {
-    public static function setApiKey()
+    public static function setApiKey(?string $key = null)
     {
-        return Stripe::setApiKey(env('STRIPE_SECRET'));
+        return Stripe::setApiKey($key ?? config('services.stripe.secret'));
     }
 
-    public static function getSetupSession(ShopRegistration $registration)
-    {
-        $setupFee = config('services.stripe.setup_fee');
+    // public static function getSetupSession(ShopRegistration $registration)
+    // {
+    //     $setupFee = config('services.stripe.setup_fee');
 
+    //     self::setApiKey();
+
+    //     return Session::create([
+    //         'mode' => 'payment',
+    //         'customer_email' => $registration->owner_email,
+
+    //         'payment_intent_data' => [
+    //             'setup_future_usage' => 'off_session',
+    //         ],
+
+    //         'metadata' => [
+    //             'registration_id' => $registration->id
+    //         ],
+
+    //         'line_items' => [[
+    //             'price' => $setupFee,
+    //             'quantity' => 1,
+    //         ]],
+
+    //         'success_url' => route('shop.registration.payment.success') . '?session_id={CHECKOUT_SESSION_ID}',
+    //         'cancel_url' => route('setup.payment.canceled') . '?session_id={CHECKOUT_SESSION_ID}',
+    //     ]);
+    // }
+
+    public function getSessionDetails(string $sessionID): Session
+    {
         self::setApiKey();
 
-        return Session::create([
-            'mode' => 'payment',
-            'customer_email' => $registration->owner_email,
+        return \Stripe\Checkout\Session::retrieve($sessionID);
 
-            'payment_intent_data' => [
-                'setup_future_usage' => 'off_session',
-            ],
-
-            'metadata' => [
-                'registration_id' => $registration->id
-            ],
-
-            'line_items' => [[
-                'price' => $setupFee,
-                'quantity' => 1,
-            ]],
-
-            'success_url' => route('shop.registration.payment.success') . '?session_id={CHECKOUT_SESSION_ID}',
-            'cancel_url' => route('setup.payment.canceled') . '?session_id={CHECKOUT_SESSION_ID}',
-        ]);
     }
-
-    public function getSessionDetails($sessionID) {}
 
     public function createTestSubscriptionWithClock()
     {
-        $stripe = new StripeClient(env('STRIPE_SECRET'));
+        $stripe = new StripeClient(config('services.stripe.secret'));
 
         $testToken = 'tok_visa';
 
         $testClock = $stripe->testHelpers->testClocks->create([
-            'frozen_time' =>  Carbon::now()->timestamp,
-            'name' => 'Monthly Renewal Test - ' . now()->format('Y-m-d H:i'),
+            'frozen_time' => Carbon::now()->timestamp,
+            'name'        => 'Monthly Renewal Test - ' . now()->format('Y-m-d H:i'),
         ]);
 
         $customer = $stripe->customers->create([

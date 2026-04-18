@@ -39,4 +39,21 @@ class ShopService
         ]);
     }
 
+    public function suspendShop(int $shopId): bool
+    {
+        $shop = $this->shopRepo->find('id', $shopId);
+
+        return $this->shopRepo->update($shop, [
+            'status' =>  ShopStatus::SUSPENDED
+        ]);
+    }
+
+    public function activateShop(int $shopId): bool
+    {
+        $shop = $this->shopRepo->find('id', $shopId);
+
+        return $this->shopRepo->update($shop, [
+            'status' =>  ShopStatus::ACTIVE
+        ]);
+     }
 }

@@ -16,6 +16,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Log;
+use Laravel\Cashier\Checkout;
 
 class ShopRegistrationController extends Controller
 {
@@ -39,28 +41,70 @@ class ShopRegistrationController extends Controller
         DB::beginTransaction();
         try {
             $newRegistration = $this->shopRegistrationService->temporaryRegistration($request);
-            $session = StripeHelper::getSetupSession($newRegistration);
+
+            StripeHelper::setApiKey();
+            $customerParams = [
+                'email' => $newRegistration->owner_email,
+                'name'  => $newRegistration->owner_name,
+            ];
+            $testClockId = config('services.stripe.test_clock_id');
+            if ($testClockId) {
+                $customerParams['test_clock'] = $testClockId;
+            }
+
+            $stripeCustomer = \Stripe\Customer::create($customerParams);
+
+
+            $checkout = Checkout::guest()->create(
+                [
+                    config('services.stripe.setup_fee') => 1
+                ],
+                [
+                    'customer'    => $stripeCustomer->id,  // ← changed
+                    'payment_intent_data' => [
+                        'setup_future_usage' => 'off_session',
+                    ],
+
+                    'metadata' => [
+                        'registration_id' => $newRegistration->id,
+                        'stripe_customer_id' => $stripeCustomer->id,
+                    ],
+
+                    'success_url' => route('shop.registration.payment.success') . '?session_id={CHECKOUT_SESSION_ID}',
+                    'cancel_url' => route('setup.payment.canceled') . '?session_id={CHECKOUT_SESSION_ID}',
+                ]
+            );
+
+
+
+            // $session = StripeHelper::getSetupSession($newRegistration);
 
             $this->shopRegistrationService->updateShopRegistration($newRegistration, [
-                    'stripe_session_id' => $session->id
-                ]);
+                'stripe_session_id' => $checkout->id
+            ]);
 
             DB::commit();
         } catch (\Exception $e) {
             DB::rollBack();
 
-            dd($e);
+            Log::error('Shop registration checkout error', ['error' => $e->getMessage()]);
+
+            return back()->withErrors(['message' => 'Payment setup failed. Please try again.']);
         }
 
-        return Inertia::location($session->url);
+        return Inertia::location($checkout->url);
     }
 
     public function success(Request $request)
     {
-        $sessionID = $request->query('session_id');
+        $sessionId = $request->query('session_id');
+
+        if (!$sessionId) {
+            return Inertia::location(route('shop.registration'));
+        }
 
         return Inertia::render('Auth/ShopRegistrationSuccess', [
-            'session_id' => $sessionID
+            'session_id' => $sessionId,
         ]);
 
         // $sessionData = RedisHandlers::getData($sessionID);

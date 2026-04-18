@@ -2,8 +2,10 @@
 
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\RegistrationController;
 use App\Http\Controllers\ShopRegistrationController;
 use App\Http\Controllers\Stripe\WebhookController;
+use App\Http\Controllers\UserController;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -17,6 +19,17 @@ Route::get('shop-registration/payment/canceled', [PaymentController::class, 'can
 Route::get('/', function () {
     return Inertia::render('Welcome');
 });
+
+
+Route::resource('/user-registration', RegistrationController::class)->names([
+        'index' => 'registration.index',
+        'create' => 'registration.create',
+        'store' => 'registration.store',
+        'show' => 'registration.show',
+        'edit' => 'registration.edit',
+        'update' => 'registration.update',
+        'destroy' => 'registration.destroy',
+    ]);;
 
 // Route::get('/', function () {
 //     return Inertia::render('Welcome', [

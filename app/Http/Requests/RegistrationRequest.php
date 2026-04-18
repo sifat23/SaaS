@@ -6,7 +6,7 @@ use App\Rules\ValidEmail;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Hash;
 
-class ShopRegistrationRequest extends FormRequest
+class RegistrationRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -25,7 +25,6 @@ class ShopRegistrationRequest extends FormRequest
     {
         return [
             'owner_name' => 'required|min:3|max:200',
-            // 'shop_name' => 'required|min:3|max:200',
             'owner_email' => [
                 'required',
                 new ValidEmail,
@@ -40,7 +39,7 @@ class ShopRegistrationRequest extends FormRequest
     public function messages()
     {
         return [
-            'owner_name.required' => 'The shop name is required.',
+            'owner_name.required' => "The owner's name is required.",
             'owner_email.required' => "The owner's email is required",
         ];
     }

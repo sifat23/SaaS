@@ -2,11 +2,13 @@
 
 namespace App\Services;
 
+use App\Models\User;
 use App\Repositories\Interfaces\SubscriptionRepositoryInterface;
 use App\Repositories\Interfaces\UserRepositoryInterface;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Laravel\Cashier\Subscription;
 
 class SubscriptionService
 {
@@ -21,13 +23,13 @@ class SubscriptionService
         $this->userRepo = $userRepo;
     }
 
-    public function createFreeSubscription($user)
+    public function createFreeSubscription($user, string $paymentMethodId): Subscription
     {
         $monthlyFee = config('services.stripe.monthly_fee');
 
         return $user->newSubscription('default', $monthlyFee)
             ->trialDays(30)
-            ->create();
+            ->create($paymentMethodId);
     }
 
     public function updateSubscriptionModel($subscription, $data)
@@ -35,19 +37,24 @@ class SubscriptionService
         return $this->subscriptionRepo->update($subscription, $data);
     }
 
-    public function completeSubscription($subscriptionData): void
+    public function completeSubscription(array $stripeSubscription): void
     {
-        $stripeID = $subscriptionData['id'];
-        $subscription = $this->subscriptionRepo->find('stripe_id', $stripeID);
 
-        [$itemNextBilling, $itemStatCycle] = $this->findPeriodCycle($subscriptionData);
+        Log::info('Subscription created on Stripe', [
+            'stripe_subscription_id' => $stripeSubscription['id'],
+        ]);
 
-        if (!empty($itemNextBilling) && !empty($itemStatCycle)) {
-            $this->subscriptionRepo->update($subscription, [
-                'next_billing_date' => $itemNextBilling,
-                'start_date' => $itemStatCycle
-            ]);
-        }
+        // $stripeID = $subscriptionData['id'];
+        // $subscription = $this->subscriptionRepo->find('stripe_id', $stripeID);
+
+        // [$itemNextBilling, $itemStatCycle] = $this->findPeriodCycle($subscriptionData);
+
+        // if (!empty($itemNextBilling) && !empty($itemStatCycle)) {
+        //     $this->subscriptionRepo->update($subscription, [
+        //         'next_billing_date' => $itemNextBilling,
+        //         'start_date' => $itemStatCycle
+        //     ]);
+        // }
     }
 
     public function findPeriodCycle($subscriptionData)
@@ -73,29 +80,45 @@ class SubscriptionService
         return [$itemNextBilling, $itemStatCycle];
     }
 
-    public function processSubscriptionUpdate($subscriptionData, $user)
+    public function processSubscriptionUpdate(array $subscriptionData, User $user): void
     {
-        [$itemNextBilling, $itemStatCycle] = $this->findPeriodCycle($subscriptionData);
+        $trialEnd = $subscriptionData['trial_end'] ?? null;
 
-        DB::beginTransaction();
-        try {
-            $this->userRepo->update($user, [
-                'stripe_status'          => $subscriptionData['status'],
-                'subscription_ends_at'   => $itemNextBilling
+        $this->userRepo->update($user, [
+            'trial_ends_at' => $trialEnd ? \Carbon\Carbon::createFromTimestamp($trialEnd) : null,
+        ]);
+
+        if ($user->shop_id) {
+            \App\Models\Shop::where('id', $user->shop_id)->update([
+                'trial_ends_at' => $trialEnd
+                    ? \Carbon\Carbon::createFromTimestamp($trialEnd)
+                    : now(),
+                'status' => \App\Enums\ShopStatus::ACTIVE,
             ]);
-    
-            $userSubscription = $this->userRepo->getDefaultSubscription($user);
-    
-            $this->subscriptionRepo->update($userSubscription, [
-                'next_billing_date' => $itemNextBilling,
-                'start_date' => $itemStatCycle
-            ]);
-            
-            DB::commit();
-        } catch (\Exception $e) {
-            //throw $th;
-            DB::rollBack();
-            dd($e);
         }
+
+
+        //     [$itemNextBilling, $itemStatCycle] = $this->findPeriodCycle($subscriptionData);
+
+        //     DB::beginTransaction();
+        //     try {
+        //         $this->userRepo->update($user, [
+        //             'stripe_status'          => $subscriptionData['status'],
+        //             'subscription_ends_at'   => $itemNextBilling
+        //         ]);
+
+        //         $userSubscription = $this->userRepo->getDefaultSubscription($user);
+
+        //         $this->subscriptionRepo->update($userSubscription, [
+        //             'next_billing_date' => $itemNextBilling,
+        //             'start_date' => $itemStatCycle
+        //         ]);
+
+        //         DB::commit();
+        //     } catch (\Exception $e) {
+        //         //throw $th;
+        //         DB::rollBack();
+        //         dd($e);
+        //     }
     }
 }

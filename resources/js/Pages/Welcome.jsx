@@ -53,8 +53,14 @@ export default function Welcome({ auth, laravelVersion, phpVersion }) {
                                         >
                                             Log in hhhhhhh jjjjjjjj kkakkakak
                                         </Link>
-                                        <Link
+                                        {/* <Link
                                             href={route('shop.registration')}
+                                            className="rounded-md px-3 py-2 text-black ring-1 ring-transparent transition hover:text-black/70 focus:outline-none focus-visible:ring-[#FF2D20] dark:text-white dark:hover:text-white/80 dark:focus-visible:ring-white"
+                                        >
+                                            Register
+                                        </Link> */}
+                                         <Link
+                                            href={route('registration.index')}
                                             className="rounded-md px-3 py-2 text-black ring-1 ring-transparent transition hover:text-black/70 focus:outline-none focus-visible:ring-[#FF2D20] dark:text-white dark:hover:text-white/80 dark:focus-visible:ring-white"
                                         >
                                             Register
